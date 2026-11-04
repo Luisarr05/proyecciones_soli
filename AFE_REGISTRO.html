@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBVA Bancomer - Rating Corporativo AFE</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bbva: {
+                            navy: '#072146',
+                            blue: '#1464A5',
+                            lightBg: '#F4F6F9',
+                            cardBg: '#FFFFFF',
+                            calcBg: '#EDF2F7',
+                            border: '#D2D6DC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #F4F6F9;
+            color: #072146;
+        }
+        .input-user {
+            background-color: #EBF8FF;
+            border: 1px solid #3182CE;
+            font-weight: 600;
+            color: #1A365D;
+            transition: all 0.2s;
+        }
+        .input-user:focus {
+            background-color: #FFFFFF;
+            border-color: #1464A5;
+            box-shadow: 0 0 0 3px rgba(20, 100, 165, 0.2);
+            outline: none;
+        }
+        .calc-field-formal {
+            background-color: #EDF2F7;
+            font-weight: 700;
+            color: #072146;
+        }
+        .tab-btn { transition: all 0.2s ease; }
+        .tab-btn.active {
+            border-bottom: 3px solid #1464A5;
+            color: #1464A5;
+            font-weight: 700;
+            background-color: #FFFFFF;
+        }
+
+        .pdf-mode {
+            background: #FFFFFF !important;
+            padding: 15px !important;
+            width: 100% !important;
+        }
+        .pdf-mode .no-print {
+            display: none !important;
+        }
+        .pdf-mode table {
+            font-size: 8pt !important;
+            border-collapse: collapse !important;
+            width: 100% !important;
+        }
+        .pdf-mode th, .pdf-mode td {
+            padding: 3px 5px !important;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- HEADER INSTITUCIONAL BBVA -->
+    <header class="bg-bbva-navy text-white p-6 rounded-xl shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center no-print">
+        <div class="flex items-center space-x-4">
+            <div class="bg-white text-bbva-navy font-black text-2xl px-4 py-2 rounded shadow">
+                BBVA
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide">SISTEMA DE ANÁLISIS FINANCIERO DE EMPRESAS (AFE)</h1>
+                <p class="text-xs text-blue-200">Rating Corporativo Versión 1.7.5 | Formato Institucional</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- BARRA DE BÚSQUEDA Y REGISTRO DE CLIENTE -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-bbva-navy mb-6 no-print">
+        <h2 class="text-base font-bold text-bbva-navy mb-4 flex items-center gap-2">
+            <i class="fas fa-search text-bbva-blue"></i> BUSCAR / REGISTRAR CLIENTE EN SISTEMA AFE
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div>
+                <label class="block font-semibold text-gray-600 mb-1">No. Cliente BBVA (*)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="no_cliente" placeholder="37943836" class="input-user w-full p-2 rounded">
+                    <button onclick="buscarClienteJS()" class="bg-bbva-blue hover:bg-blue-700 text-white px-3 py-2 rounded font-bold transition flex items-center gap-1">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-600 mb-1">Empresa / Razón Social (*)</label>
+                <input type="text" id="empresa" placeholder="GRUPO INDUSTRIAL VIDA SA DE CV" class="input-user w-full p-2 rounded">
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-600 mb-1">Grupo Financiero / Holding</label>
+                <input type="text" id="grupo" placeholder="GRUPO INDUSTRIAL VIDA" class="input-user w-full p-2 rounded">
+            </div>
+            <div class="flex items-end gap-2">
+                <button onclick="registrarClienteJS()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded transition w-full">
+                    <i class="fas fa-user-plus"></i> Registrar Cliente
+                </button>
+            </div>
+        </div>
+        <div class="mt-3">
+            <span id="status-busqueda" class="text-xs font-bold text-gray-500">Ingrese un No. de Cliente y presione Buscar o Registrar.</span>
+        </div>
+    </section>
+
+    <!-- VISTA Y COMPARATIVO AFE ACUMULADO -->
+    <div id="contenedor-reporte-pdf">
+        <section class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-bbva-blue mb-6">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-3 mb-4 gap-2">
+                <div>
+                    <h2 class="text-base font-bold text-bbva-navy flex items-center gap-2">
+                        <i class="fas fa-table text-bbva-blue"></i> COMPARATIVO DE EJERCICIOS REGISTRADOS EN SHEETS
+                    </h2>
+                    <p class="text-xs text-gray-600 mt-1 font-semibold">
+                        CLIENTE: <span id="lbl-empresa-nombre" class="font-bold text-bbva-navy">NO SELECCIONADO</span> | NO. CLIENTE: <span id="lbl-cliente-num" class="font-bold text-bbva-navy">----</span>
+                    </p>
+                </div>
+                <div class="flex gap-2 no-print">
+                    <button onclick="descargarExcelJS()" id="btn-excel" disabled class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-3 py-2 rounded font-bold transition flex items-center gap-1 opacity-50 cursor-not-allowed">
+                        <i class="fas fa-file-excel"></i> Descargar Excel (Sheets)
+                    </button>
+                    <button onclick="exportarPDFJS()" id="btn-pdf" disabled class="bg-red-700 hover:bg-red-800 text-white text-xs px-3 py-2 rounded font-bold transition flex items-center gap-1 opacity-50 cursor-not-allowed">
+                        <i class="fas fa-file-pdf"></i> Descargar PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA DE TABLAS SEPARADAS: ER, ACTIVOS, PASIVOS Y CAPITAL -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xs font-bold text-bbva-navy uppercase mb-2 border-b-2 border-bbva-navy pb-1">
+                        II. ESTADO DE RESULTADOS
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border border-gray-200">
+                            <thead id="thead-er" class="bg-bbva-navy text-white font-bold">
+                                <tr><th class="p-2 border">CONCEPTO</th><th class="p-2 border text-center">SIN REGISTROS</th></tr>
+                            </thead>
+                            <tbody id="tbody-er" class="divide-y divide-gray-200">
+                                <tr><td colspan="2" class="p-3 text-center text-gray-400">Sin ejercicios AFE registrados.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-emerald-800 uppercase mb-2 border-b-2 border-emerald-700 pb-1">
+                        III. BALANCE GENERAL - ACTIVOS
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border border-gray-200">
+                            <thead id="thead-bg-activos" class="bg-emerald-700 text-white font-bold">
+                                <tr><th class="p-2 border">CONCEPTOS ACTIVOS</th><th class="p-2 border text-center">SIN REGISTROS</th></tr>
+                            </thead>
+                            <tbody id="tbody-bg-activos" class="divide-y divide-gray-200">
+                                <tr><td colspan="2" class="p-3 text-center text-gray-400">Sin ejercicios AFE registrados.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-red-800 uppercase mb-2 border-b-2 border-red-800 pb-1">
+                        III. BALANCE GENERAL - PASIVOS Y CAPITAL
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border border-gray-200">
+                            <thead id="thead-bg-pasivos" class="bg-red-800 text-white font-bold">
+                                <tr><th class="p-2 border">CONCEPTOS PASIVOS Y CAPITAL</th><th class="p-2 border text-center">SIN REGISTROS</th></tr>
+                            </thead>
+                            <tbody id="tbody-bg-pasivos" class="divide-y divide-gray-200">
+                                <tr><td colspan="2" class="p-3 text-center text-gray-400">Sin ejercicios AFE registrados.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </div>
+
+    <!-- FORMULARIO ESTRUCTURADO TAL CUAL AFE -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-emerald-600 no-print">
+        <div class="flex justify-between items-center border-b pb-3 mb-4">
+            <h2 class="text-base font-bold text-bbva-navy flex items-center gap-2">
+                <i class="fas fa-plus-circle text-emerald-600"></i> CAPTURAR Y AGREGAR NUEVO EJERCICIO FINANCIERO (AFE)
+            </h2>
+            <button onclick="cargarDatosEjemplo()" type="button" class="text-xs bg-white text-bbva-blue border border-bbva-blue hover:bg-blue-50 font-semibold px-3 py-1.5 rounded transition shadow-sm">
+                <i class="fas fa-sync-alt"></i> Cargar Datos de Ejemplo
+            </button>
+        </div>
+
+        <form id="form-nuevo-afe" onsubmit="guardarNuevoEjercicioAFE(event)" class="space-y-6 text-xs">
+            
+            <!-- DATOS DEL EJERCICIO -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <div>
+                    <label class="block font-semibold text-gray-600 mb-1">Auditor (I10) (*)</label>
+                    <select id="auditor" class="input-user w-full p-2 rounded">
+                        <option value="AUDITADO S/SALVEDAD" selected>AUDITADO S/SALVEDAD</option>
+                        <option value="AUDITADO C/SALVEDAD">AUDITADO C/SALVEDAD</option>
+                        <option value="INTERNO">INTERNO</option>
+                        <option value="BMV">BMV</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-600 mb-1">Fecha de Cierre (DD/MM/AAAA) (*)</label>
+                    <input type="date" id="fecha_cierre" required class="input-user w-full p-2 rounded">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-600 mb-1">Tipo Ejercicio (*)</label>
+                    <select id="tipo_ejercicio" class="input-user w-full p-2 rounded">
+                        <option value="ANUAL" selected>ANUAL (12 MESES)</option>
+                        <option value="PARCIAL">PARCIAL</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-600 mb-1">Inflación Anual (%)</label>
+                    <input type="number" step="0.01" id="inflacion" value="5.69" class="input-user w-full p-2 rounded" oninput="calcularTodo()">
+                </div>
+            </div>
+
+            <!-- PESTAÑAS DE CAPTURA AFE -->
+            <div class="flex border-b border-gray-300 bg-gray-100 rounded-t-lg p-1 space-x-1">
+                <button type="button" onclick="switchFormTab('form-tab-er')" id="btn-form-er" class="tab-btn active py-2 px-4 text-xs font-semibold text-gray-600 rounded-t-lg flex items-center space-x-2">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Estado de Resultados</span>
+                </button>
+                <button type="button" onclick="switchFormTab('form-tab-bg')" id="btn-form-bg" class="tab-btn py-2 px-4 text-xs font-semibold text-gray-600 rounded-t-lg flex items-center space-x-2">
+                    <i class="fas fa-balance-scale"></i>
+                    <span>Balance General</span>
+                </button>
+            </div>
+
+            <!-- PESTAÑA 1: ESTADO DE RESULTADOS COMPLETO TAL CUAL AFE -->
+            <div id="form-tab-er" class="form-tab-content space-y-6">
+                
+                <!-- TABLA PRINCIPAL ESTADO DE RESULTADOS -->
+                <div class="overflow-x-auto bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-bbva-navy text-white">
+                            <tr>
+                                <th class="p-2 rounded-l">CONCEPTO</th>
+                                <th class="p-2 text-right w-40">MONTO ($ TH)</th>
+                                <th class="p-2 text-right w-20 rounded-r">%</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr>
+                                <td class="p-1.5 font-medium">VENTAS NETAS NACIONALES</td>
+                                <td class="p-1.5"><input type="number" id="v_nacionales" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_v_nac">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">VENTAS NETAS EXPORTACIÓN</td>
+                                <td class="p-1.5"><input type="number" id="v_exportacion" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_v_exp">0%</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-bold text-bbva-navy border-t border-b border-gray-300">
+                                <td class="p-1.5">VENTAS NETAS TOTALES</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="v_totales">0</td>
+                                <td class="p-1.5 text-right" id="pct_v_tot">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">COSTO DE VENTAS</td>
+                                <td class="p-1.5"><input type="number" id="costo_ventas" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_costo_ventas">0%</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-bold text-bbva-navy border-t border-b border-gray-300">
+                                <td class="p-1.5">UTILIDAD BRUTA</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="utilidad_bruta">0</td>
+                                <td class="p-1.5 text-right" id="pct_utilidad_bruta">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">GTOS DE VTA. Y ADMON.</td>
+                                <td class="p-1.5"><input type="number" id="gtos_vta_admon" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_gtos_vta">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">DEPRECIACION</td>
+                                <td class="p-1.5"><input type="number" id="depreciacion" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_depr">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">AMORTIZACION</td>
+                                <td class="p-1.5"><input type="number" id="amortizacion" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_amort">0%</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-bold text-bbva-navy border-t border-b border-gray-300">
+                                <td class="p-1.5">U A F I R</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="uafir">0</td>
+                                <td class="p-1.5 text-right" id="pct_uafir">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">GASTOS FINANCIEROS</td>
+                                <td class="p-1.5"><input type="number" id="gtos_fin" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_gtos_fin">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">PRODUCTOS FINANCIEROS</td>
+                                <td class="p-1.5"><input type="number" id="prod_fin" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_prod_fin">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">PERD. (UTILIDAD) POS. MON.</td>
+                                <td class="p-1.5"><input type="number" id="pos_monetaria" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_pos_mon">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">PERD. (UTILIDAD) CAMBIARIA</td>
+                                <td class="p-1.5"><input type="number" id="perd_cambiaria" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_perd_camb">0%</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-bold">
+                                <td class="p-1.5">CTO INTEGRAL FINAN.</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="cif">0</td>
+                                <td class="p-1.5 text-right" id="pct_cif">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">OTROS GASTOS (INGRESOS)</td>
+                                <td class="p-1.5"><input type="number" id="otros_gastos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_otros_gastos">0%</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-bold">
+                                <td class="p-1.5">UT. ANTES DE ISR Y PTU</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="ut_antes_imp">0</td>
+                                <td class="p-1.5 text-right" id="pct_ut_antes_imp">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">I.S.R. CAUSADO</td>
+                                <td class="p-1.5"><input type="number" id="isr_causado" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_isr">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">P.T.U. CAUSADO</td>
+                                <td class="p-1.5"><input type="number" id="ptu_causado" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_ptu">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">IMPAC CAUSADO</td>
+                                <td class="p-1.5"><input type="number" id="impac_causado" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_impac">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">IMPUESTOS Y PTU DIFERIDOS</td>
+                                <td class="p-1.5"><input type="number" id="imp_ptu_diferidos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_imp_dif">0%</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-bold">
+                                <td class="p-1.5">UT. ANTES PART. EXTAORD.</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="ut_antes_extraord">0</td>
+                                <td class="p-1.5 text-right" id="pct_ut_antes_extraord">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">PERDIDA (UTILIDAD) EXTRAORD.</td>
+                                <td class="p-1.5"><input type="number" id="perd_extraord" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_perd_extraord">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">PERD. (UTIL.) SUBS./AFILS.</td>
+                                <td class="p-1.5"><input type="number" id="perd_subsidiarias" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold" id="pct_perd_subs">0%</td>
+                            </tr>
+                            <tr class="bg-bbva-navy text-white font-extrabold border-t-2 border-bbva-navy">
+                                <td class="p-1.5 text-xs">UTILIDAD NETA</td>
+                                <td class="p-1.5 text-right text-xs text-white" id="utilidad_neta">0</td>
+                                <td class="p-1.5 text-right text-xs" id="pct_utilidad_neta">0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SUBTABLA INDEPENDIENTE DE EBITDA Y DEUDA -->
+                <div class="overflow-x-auto bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <table class="w-full text-xs text-left shadow-sm rounded-lg overflow-hidden border border-gray-200">
+                        <tbody class="divide-y divide-gray-200">
+                            <tr>
+                                <td class="p-1.5 font-medium bg-white">UTIL. (PERD.) PART. MINORITARIA</td>
+                                <td class="p-1.5 bg-white w-40"><input type="number" id="part_minoritaria" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold bg-white w-20" id="pct_part_min">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium bg-white">UTIL. (PERD.) CIA. TENEDORA</td>
+                                <td class="p-1.5 bg-white"><input type="number" id="cia_tenedora" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right font-semibold bg-white" id="pct_tenedora">0%</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-50">
+                                <td class="p-1.5 text-bbva-blue">UAFIRDA</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded text-bbva-blue" id="uafirda">0</td>
+                                <td class="p-1.5 text-right" id="pct_uafirda">0%</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-50">
+                                <td class="p-1.5">GASTO FINANCIERO NETO</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="gasto_fin_neto">0</td>
+                                <td class="p-1.5 text-right" id="pct_gasto_fin_neto">0%</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-50">
+                                <td class="p-1.5">UAFIRDA NETO DE INTERESES</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="uafirda_neto_int">0</td>
+                                <td class="p-1.5 text-right" id="pct_uafirda_neto_int">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium bg-white">INVERSION EN ACTIVOS FIJOS</td>
+                                <td class="p-1.5 bg-white"><input type="number" id="inv_act_fijos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                <td class="p-1.5 text-right text-gray-400 bg-white">-</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-50">
+                                <td class="p-1.5">UAFIRDA NETO DE INT. E INV.</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded" id="uafirda_neto_int_inv">0</td>
+                                <td class="p-1.5 text-right" id="pct_uafirda_neto_int_inv">0%</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-100">
+                                <td class="p-1.5">DEUDA NETA / EBITDA</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded text-bbva-navy" id="deuda_neta_ebitda">0.00</td>
+                                <td class="p-1.5 text-right text-gray-400">-</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-100">
+                                <td class="p-1.5">DEUDA FINANCIERA TOTAL</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded text-bbva-navy" id="deuda_fin_total">0</td>
+                                <td class="p-1.5 text-right text-gray-400">-</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-100">
+                                <td class="p-1.5">DEUDA FINANCIERA NETA</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded text-bbva-navy" id="deuda_fin_neta">0</td>
+                                <td class="p-1.5 text-right text-gray-400">-</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-100">
+                                <td class="p-1.5">PAY BACK ADMON CENTRAL</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded text-bbva-navy" id="payback_admon">0.00</td>
+                                <td class="p-1.5 text-right text-gray-400">-</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-100">
+                                <td class="p-1.5">FONDO DE MANIOBRA</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded text-bbva-navy" id="fondo_maniobra">0</td>
+                                <td class="p-1.5 text-right text-gray-400">-</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-200">
+                                <td class="p-1.5">PAY BACK DE OPERACION</td>
+                                <td class="p-1.5 text-right calc-field-formal rounded text-bbva-navy" id="payback_operacion">0.00</td>
+                                <td class="p-1.5 text-right text-gray-400">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <!-- PESTAÑA 2: BALANCE GENERAL COMPLETO TAL CUAL AFE -->
+            <div id="form-tab-bg" class="form-tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    
+                    <!-- ACTIVOS -->
+                    <div>
+                        <h3 class="font-bold text-bbva-blue text-xs border-b-2 border-bbva-blue pb-1 mb-2">ACTIVOS</h3>
+                        <table class="w-full">
+                            <thead class="bg-gray-100 text-gray-700 font-bold border-b">
+                                <tr>
+                                    <th class="py-1 text-left">CONCEPTO</th>
+                                    <th class="py-1 text-right w-24">MONTO ($ TH)</th>
+                                    <th class="py-1 text-right w-12">%</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr>
+                                    <td class="py-1">CAJA Y BANCOS</td>
+                                    <td><input type="number" id="caja_bancos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_caja_bancos">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">INVERSIONES TEMPORALES</td>
+                                    <td><input type="number" id="inv_temp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_inv_temp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">CLIENTES Y DOCTOS X COB.</td>
+                                    <td><input type="number" id="clientes" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_clientes">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">INVENTARIOS</td>
+                                    <td><input type="number" id="inventarios" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_inventarios">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">CTAS. X COBRAR A FILIALES</td>
+                                    <td><input type="number" id="ctas_cob_filiales" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_ctas_cob_filiales">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PAGOS ANTICIPADOS</td>
+                                    <td><input type="number" id="pagos_anticipados" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_pagos_ant">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">OTROS ACT. CIRC. OPERATIVOS</td>
+                                    <td><input type="number" id="otros_act_circ" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_otros_act_circ">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">DEUDORES DIVERSOS</td>
+                                    <td><input type="number" id="deudores_div" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_deudores_div">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">OTROS ACT. CIRC. NO OPERAT.</td>
+                                    <td><input type="number" id="otros_act_circ_noop" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_otros_act_circ_noop">0%</td>
+                                </tr>
+                                <tr class="bg-gray-100 font-bold text-bbva-navy">
+                                    <td class="py-1 px-1">TOTAL ACT. CIRCULANTE</td>
+                                    <td class="text-right p-1 calc-field-formal rounded" id="tot_act_circ">0</td>
+                                    <td class="text-right p-1" id="pct_tot_act_circ">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1 font-semibold">PROP. PLANTA Y EQ. NETO</td>
+                                    <td><input type="number" id="prop_planta_eq" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_prop_planta">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">INVERS. EN SUBS./AFILS.</td>
+                                    <td><input type="number" id="inv_subs_afils" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_inv_subs">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">CTAS. X COBRAR A FILIALES (LP)</td>
+                                    <td><input type="number" id="ctas_cob_filiales_lp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_ctas_cob_fil_lp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">OTROS ACTIVOS FIJOS</td>
+                                    <td><input type="number" id="otros_act_fijos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_otros_act_fijos">0%</td>
+                                </tr>
+                                <tr class="bg-gray-100 font-bold text-bbva-navy">
+                                    <td class="py-1 px-1">TOTAL ACTIVO FIJO</td>
+                                    <td class="text-right p-1 calc-field-formal rounded" id="tot_act_fijo">0</td>
+                                    <td class="text-right p-1" id="pct_tot_act_fijo">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">ACTIVO POR IMPUESTOS DIFERIDOS</td>
+                                    <td><input type="number" id="act_imp_diferidos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_act_imp_dif">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PATENTES, LIC. Y MARCAS</td>
+                                    <td><input type="number" id="patentes_marcas" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_patentes">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">CREDITO MERCANTIL</td>
+                                    <td><input type="number" id="credito_mercantil" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_credito_merc">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">CARGOS DIFERIDOS</td>
+                                    <td><input type="number" id="cargos_diferidos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_cargos_dif">0%</td>
+                                </tr>
+                                <tr class="bg-gray-100 font-bold text-bbva-navy">
+                                    <td class="py-1 px-1">TOTAL OTROS ACTIVOS</td>
+                                    <td class="text-right p-1 calc-field-formal rounded" id="tot_otros_act">0</td>
+                                    <td class="text-right p-1" id="pct_tot_otros_act">0%</td>
+                                </tr>
+                                <tr class="bg-bbva-navy text-white font-black text-xs">
+                                    <td class="p-2">TOTAL ACTIVO</td>
+                                    <td class="text-right p-2 rounded" id="total_activo">0</td>
+                                    <td class="text-right p-2">0%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- PASIVOS Y CAPITAL -->
+                    <div>
+                        <h3 class="font-bold text-red-700 text-xs border-b-2 border-red-700 pb-1 mb-2">PASIVOS Y CAPITAL</h3>
+                        <table class="w-full">
+                            <thead class="bg-gray-100 text-gray-700 font-bold border-b">
+                                <tr>
+                                    <th class="py-1 text-left">CONCEPTO</th>
+                                    <th class="py-1 text-right w-28">MONTO ($ TH)</th>
+                                    <th class="py-1 text-right w-14">%</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr>
+                                    <td class="py-1">BANCOMER CORTO PLAZO</td>
+                                    <td><input type="number" id="bancomer_cp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_bancomer_cp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">OTROS BANCOS CORTO PLAZO</td>
+                                    <td><input type="number" id="pas_bancos_cp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_pas_bancos_cp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">EMISIONES DE DEUDA (CP)</td>
+                                    <td><input type="number" id="emisiones_deuda_cp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_emisiones_cp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PORC. CIRC. LP BANCOMER</td>
+                                    <td><input type="number" id="porc_lp_bancomer" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_porc_lp_bancomer">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PORC. CIRC. LP OTROS BANCOS</td>
+                                    <td><input type="number" id="porc_lp_otros" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_porc_lp_otros">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PROVEEDORES</td>
+                                    <td><input type="number" id="proveedores" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_proveedores">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">IMPUESTOS POR PAGAR</td>
+                                    <td><input type="number" id="impuestos_x_pagar" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_impuestos_x_pagar">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">CUENTAS X PAGAR FILIALES</td>
+                                    <td><input type="number" id="ctas_pagar_filiales" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_ctas_pagar_filiales">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">GASTOS ACUMULADOS</td>
+                                    <td><input type="number" id="gastos_acumulados" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_gastos_acum">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">OTROS PAS. CIRC. OPERATIVOS</td>
+                                    <td><input type="number" id="otros_pas_circ_op" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_otros_pas_circ_op">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">OTROS PAS. CIRC. NO OPERAT.</td>
+                                    <td><input type="number" id="otros_pas_circ_noop" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_otros_pas_circ_noop">0%</td>
+                                </tr>
+                                <tr class="bg-gray-100 font-bold text-bbva-navy">
+                                    <td class="py-1 px-1">TOTAL PASIVO C.P.</td>
+                                    <td class="text-right p-1 calc-field-formal rounded" id="tot_pasivo_cp">0</td>
+                                    <td class="text-right p-1" id="pct_tot_pasivo_cp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1 font-semibold">BANCOMER LARGO PLAZO</td>
+                                    <td><input type="number" id="bancomer_lp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_bancomer_lp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1 font-semibold">OTROS BANCOS LARGO PLAZO</td>
+                                    <td><input type="number" id="otros_bancos_lp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_otros_bancos_lp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">EMISIONES DE DEUDA (LP)</td>
+                                    <td><input type="number" id="emisiones_deuda_lp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_emisiones_lp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">CUENTAS X PAGAR FILIALES (LP)</td>
+                                    <td><input type="number" id="ctas_pagar_filiales_lp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_ctas_pagar_fil_lp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">OTROS PASIVOS LARGO PZO.</td>
+                                    <td><input type="number" id="otros_pas_lp" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_otros_pas_lp">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PRIMAS DE ANTIGUEDAD</td>
+                                    <td><input type="number" id="primas_antiguedad" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_primas_ant">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PASIVOS DIFERIDOS</td>
+                                    <td><input type="number" id="pasivos_diferidos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_pasivos_dif">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PASIVO X IMPUESTOS DIFERIDOS</td>
+                                    <td><input type="number" id="pasivo_imp_diferidos" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_pas_imp_dif">0%</td>
+                                </tr>
+                                <tr class="bg-gray-100 font-bold text-bbva-navy">
+                                    <td class="py-1 px-1">TOTAL PASIVO L.P.</td>
+                                    <td class="text-right p-1 calc-field-formal rounded" id="tot_pasivo_lp">0</td>
+                                    <td class="text-right p-1" id="pct_tot_pasivo_lp">0%</td>
+                                </tr>
+                                <tr class="bg-gray-200 font-bold text-bbva-navy">
+                                    <td class="py-1 px-1">TOTAL PASIVO</td>
+                                    <td class="text-right p-1 calc-field-formal rounded" id="tot_pasivo">0</td>
+                                    <td class="text-right p-1" id="pct_tot_pasivo">0%</td>
+                                </tr>
+                                <!-- CAPITAL -->
+                                <tr class="pt-2">
+                                    <td class="py-1 font-bold text-bbva-blue">CAPITAL SOCIAL ACTUALIZADO</td>
+                                    <td><input type="number" id="capital_social" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_capital_social">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">APORT. PEND. DE CAPITALIZAR</td>
+                                    <td><input type="number" id="aport_capitalizar" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_aport_cap">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">PRIMA EN EMISION DE ACCIONES</td>
+                                    <td><input type="number" id="prima_acciones" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_prima_acc">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">INTERES MINORITARIO</td>
+                                    <td><input type="number" id="interes_minoritario" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_interes_min">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">EXC(INSUF) EN LA ACT. CC</td>
+                                    <td><input type="number" id="exc_insuf_cap" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_exc_insuf">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">IMPACTO ISR DIFERIDO</td>
+                                    <td><input type="number" id="impacto_isr_dif" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_impacto_isr">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">RESERVAS</td>
+                                    <td><input type="number" id="reservas" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_reservas">0%</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1">UTILIDADES RETENIDAS</td>
+                                    <td><input type="number" id="util_retenidas" value="0" class="input-user text-right w-full p-1 rounded" oninput="calcularTodo()"></td>
+                                    <td class="text-right font-semibold" id="pct_util_retenidas">0%</td>
+                                </tr>
+                                <tr class="font-semibold text-bbva-navy bg-gray-50">
+                                    <td class="py-1 px-1">UTILIDAD DEL EJERCICIO</td>
+                                    <td class="text-right p-1 font-bold text-bbva-blue" id="util_ejercicio_bg">0</td>
+                                    <td class="text-right p-1 font-bold" id="pct_util_ejercicio_bg">0%</td>
+                                </tr>
+                                <tr class="bg-gray-100 font-bold text-bbva-navy">
+                                    <td class="py-1 px-1">TOTAL CAP. CONTABLE</td>
+                                    <td class="text-right p-1 calc-field-formal rounded" id="tot_capital">0</td>
+                                    <td class="text-right p-1" id="pct_tot_capital">0%</td>
+                                </tr>
+                                <tr class="bg-bbva-navy text-white font-black text-xs">
+                                    <td class="p-2">TOTAL PASIVO+CAP. CONT</td>
+                                    <td class="text-right p-2 rounded" id="total_pasivo_capital">0</td>
+                                    <td class="text-right p-2">0%</td>
+                                </tr>
+                                <tr class="bg-green-100 text-green-900 font-bold text-xs">
+                                    <td class="p-1 text-center" colspan="3" id="cuadre_status">✓ BALANCE CUADRADO (Diferencia: 0.00)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-4">
+                <button type="submit" id="btn-guardar" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-6 py-2.5 rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fas fa-save"></i> GUARDAR Y CREAR NUEVA COLUMNA AFE
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- LÓGICA JAVASCRIPT CON RECALCULO COMPLETO EN FRONTEND -->
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0n-6Gkv5zBkxVKXE6_a8HIn9P0tcPXvzj7KuOcwAeBIinIUc6KOZJ3RfNm2dT28-a/exec";
+
+        function num(id) {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            const val = parseFloat(el.value);
+            return isNaN(val) ? 0 : val;
+        }
+
+        function getCalculatedVal(id) {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            const txt = el.innerText.replace(/[^0-9.-]+/g, "");
+            const val = parseFloat(txt);
+            return isNaN(val) ? 0 : val;
+        }
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+        }
+
+        function fmtMoney(amount) {
+            return formatMoney(amount);
+        }
+
+        function formatDecimal(val) {
+            return isNaN(val) || !isFinite(val) ? '0.00' : val.toFixed(2);
+        }
+
+        function formatPctRounded(val) {
+            if (isNaN(val) || !isFinite(val)) return '0%';
+            return Math.round(val * 100) + '%';
+        }
+
+        function switchFormTab(tabId) {
+            document.querySelectorAll('.form-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabId).classList.remove('hidden');
+            if (tabId === 'form-tab-er') {
+                document.getElementById('btn-form-er').classList.add('active');
+            } else {
+                document.getElementById('btn-form-bg').classList.add('active');
+            }
+        }
+
+        function calcularTodo() {
+            // II. ESTADO DE RESULTADOS
+            const vNac = num('v_nacionales');
+            const vExp = num('v_exportacion');
+            const vTot = vNac + vExp;
+
+            document.getElementById('v_totales').innerText = formatMoney(vTot);
+
+            const cVentas = num('costo_ventas');
+            const uBruta = vTot - cVentas;
+            document.getElementById('utilidad_bruta').innerText = formatMoney(uBruta);
+
+            const gtosVta = num('gtos_vta_admon');
+            const depr = num('depreciacion');
+            const amort = num('amortizacion');
+            const uafir = uBruta - gtosVta - depr - amort;
+            document.getElementById('uafir').innerText = formatMoney(uafir);
+
+            const gtosFin = num('gtos_fin');
+            const prodFin = num('prod_fin');
+            const posMon = num('pos_monetaria');
+            const perdCamb = num('perd_cambiaria');
+            
+            const cif = gtosFin - prodFin + posMon + perdCamb;
+            document.getElementById('cif').innerText = formatMoney(cif);
+
+            const otrosGastos = num('otros_gastos');
+            const utAntesImp = uafir - cif - otrosGastos;
+            document.getElementById('ut_antes_imp').innerText = formatMoney(utAntesImp);
+
+            const isr = num('isr_causado');
+            const ptu = num('ptu_causado');
+            const impac = num('impac_causado');
+            const impDif = num('imp_ptu_diferidos');
+            
+            const utAntesExtraord = utAntesImp - isr - ptu - impac - impDif;
+            document.getElementById('ut_antes_extraord').innerText = formatMoney(utAntesExtraord);
+
+            const perdExtraord = num('perd_extraord');
+            const perdSubs = num('perd_subsidiarias');
+            
+            const utNeta = utAntesExtraord - perdExtraord - perdSubs;
+            document.getElementById('utilidad_neta').innerText = formatMoney(utNeta);
+
+            // Porcentajes ER
+            if (vTot > 0) {
+                document.getElementById('pct_v_nac').innerText = formatPctRounded(vNac / vTot);
+                document.getElementById('pct_v_exp').innerText = formatPctRounded(vExp / vTot);
+                document.getElementById('pct_v_tot').innerText = formatPctRounded(1);
+                document.getElementById('pct_costo_ventas').innerText = formatPctRounded(cVentas / vTot);
+                document.getElementById('pct_utilidad_bruta').innerText = formatPctRounded(uBruta / vTot);
+                document.getElementById('pct_gtos_vta').innerText = formatPctRounded(gtosVta / vTot);
+                document.getElementById('pct_depr').innerText = formatPctRounded(depr / vTot);
+                document.getElementById('pct_amort').innerText = formatPctRounded(amort / vTot);
+                document.getElementById('pct_uafir').innerText = formatPctRounded(uafir / vTot);
+                document.getElementById('pct_gtos_fin').innerText = formatPctRounded(gtosFin / vTot);
+                document.getElementById('pct_prod_fin').innerText = formatPctRounded(prodFin / vTot);
+                document.getElementById('pct_pos_mon').innerText = formatPctRounded(posMon / vTot);
+                document.getElementById('pct_perd_camb').innerText = formatPctRounded(perdCamb / vTot);
+                document.getElementById('pct_cif').innerText = formatPctRounded(cif / vTot);
+                document.getElementById('pct_otros_gastos').innerText = formatPctRounded(otrosGastos / vTot);
+                document.getElementById('pct_ut_antes_imp').innerText = formatPctRounded(utAntesImp / vTot);
+                document.getElementById('pct_isr').innerText = formatPctRounded(isr / vTot);
+                document.getElementById('pct_ptu').innerText = formatPctRounded(ptu / vTot);
+                document.getElementById('pct_impac').innerText = formatPctRounded(impac / vTot);
+                document.getElementById('pct_imp_dif').innerText = formatPctRounded(impDif / vTot);
+                document.getElementById('pct_ut_antes_extraord').innerText = formatPctRounded(utAntesExtraord / vTot);
+                document.getElementById('pct_perd_extraord').innerText = formatPctRounded(perdExtraord / vTot);
+                document.getElementById('pct_perd_subs').innerText = formatPctRounded(perdSubs / vTot);
+                document.getElementById('pct_utilidad_neta').innerText = formatPctRounded(utNeta / vTot);
+            } else {
+                const fields = ['pct_v_nac', 'pct_v_exp', 'pct_v_tot', 'pct_costo_ventas', 'pct_utilidad_bruta', 'pct_gtos_vta', 'pct_depr', 'pct_amort', 'pct_uafir', 'pct_gtos_fin', 'pct_prod_fin', 'pct_pos_mon', 'pct_perd_camb', 'pct_cif', 'pct_otros_gastos', 'pct_ut_antes_imp', 'pct_isr', 'pct_ptu', 'pct_impac', 'pct_imp_dif', 'pct_ut_antes_extraord', 'pct_perd_extraord', 'pct_perd_subs', 'pct_utilidad_neta'];
+                fields.forEach(f => {
+                    const el = document.getElementById(f);
+                    if (el) el.innerText = '0%';
+                });
+            }
+
+            // III. BALANCE GENERAL - ACTIVOS
+            const caja = num('caja_bancos');
+            const invTemp = num('inv_temp');
+            const clientes = num('clientes');
+            const inv = num('inventarios');
+            const ctasCobFil = num('ctas_cob_filiales');
+            const pagosAnt = num('pagos_anticipados');
+            const otrosActCirc = num('otros_act_circ');
+            const deudores = num('deudores_div');
+            const otrosActCircNoOp = num('otros_act_circ_noop');
+
+            const totActCirc = caja + invTemp + clientes + inv + ctasCobFil + pagosAnt + otrosActCirc + deudores + otrosActCircNoOp;
+            document.getElementById('tot_act_circ').innerText = formatMoney(totActCirc);
+
+            const propPlanta = num('prop_planta_eq');
+            const invSubs = num('inv_subs_afils');
+            const ctasCobFilLp = num('ctas_cob_filiales_lp');
+            const otrosActFijo = num('otros_act_fijos');
+            const totActFijo = propPlanta + invSubs + ctasCobFilLp + otrosActFijo;
+            document.getElementById('tot_act_fijo').innerText = formatMoney(totActFijo);
+
+            const actImpDif = num('act_imp_diferidos');
+            const patentes = num('patentes_marcas');
+            const credMerc = num('credito_mercantil');
+            const cargosDif = num('cargos_diferidos');
+            const totOtrosAct = actImpDif + patentes + credMerc + cargosDif;
+            document.getElementById('tot_otros_act').innerText = formatMoney(totOtrosAct);
+
+            const totActivo = totActCirc + totActFijo + totOtrosAct;
+            document.getElementById('total_activo').innerText = formatMoney(totActivo);
+
+            // PASIVOS
+            const bancomerCP = num('bancomer_cp');
+            const pasBancosCP = num('pas_bancos_cp');
+            const emisionesCP = num('emisiones_deuda_cp');
+            const porcLpBancomer = num('porc_lp_bancomer');
+            const porcLpOtros = num('porc_lp_otros');
+            const prov = num('proveedores');
+            const impPagar = num('impuestos_x_pagar');
+            const ctasPagFil = num('ctas_pagar_filiales');
+            const gtosAcum = num('gastos_acumulados');
+            const otrosPasCircOp = num('otros_pas_circ_op');
+            const otrosPasCircNoOp = num('otros_pas_circ_noop');
+
+            const totPasivoCP = bancomerCP + pasBancosCP + emisionesCP + porcLpBancomer + porcLpOtros + prov + impPagar + ctasPagFil + gtosAcum + otrosPasCircOp + otrosPasCircNoOp;
+            document.getElementById('tot_pasivo_cp').innerText = formatMoney(totPasivoCP);
+
+            const bancomerLP = num('bancomer_lp');
+            const otrosBancosLP = num('otros_bancos_lp');
+            const emisionesLP = num('emisiones_deuda_lp');
+            const ctasPagFilLp = num('ctas_pagar_filiales_lp');
+            const otrosPasLP = num('otros_pas_lp');
+            const primasAnt = num('primas_antiguedad');
+            const pasivosDif = num('pasivos_diferidos');
+            const pasImpDif = num('pasivo_imp_diferidos');
+
+            const totPasivoLP = bancomerLP + otrosBancosLP + emisionesLP + ctasPagFilLp + otrosPasLP + primasAnt + pasivosDif + pasImpDif;
+            document.getElementById('tot_pasivo_lp').innerText = formatMoney(totPasivoLP);
+
+            const totPasivo = totPasivoCP + totPasivoLP;
+            document.getElementById('tot_pasivo').innerText = formatMoney(totPasivo);
+
+            // CAPITAL
+            const capSocial = num('capital_social');
+            const aportCap = num('aport_capitalizar');
+            const primaAcc = num('prima_acciones');
+            const intMin = num('interes_minoritario');
+            const excInsuf = num('exc_insuf_cap');
+            const impactoIsr = num('impacto_isr_dif');
+            const reservas = num('reservas');
+            const utilRetenidas = num('util_retenidas');
+
+            document.getElementById('util_ejercicio_bg').innerText = formatMoney(utNeta);
+
+            const totCapital = capSocial + aportCap + primaAcc + intMin + excInsuf + impactoIsr + reservas + utilRetenidas + utNeta;
+            document.getElementById('tot_capital').innerText = formatMoney(totCapital);
+
+            const totPasivoCap = totPasivo + totCapital;
+            document.getElementById('total_pasivo_capital').innerText = formatMoney(totPasivoCap);
+
+            // Porcentajes BG vs Total Activo
+            if (totActivo > 0) {
+                document.getElementById('pct_caja_bancos').innerText = formatPctRounded(caja / totActivo);
+                document.getElementById('pct_inv_temp').innerText = formatPctRounded(invTemp / totActivo);
+                document.getElementById('pct_clientes').innerText = formatPctRounded(clientes / totActivo);
+                document.getElementById('pct_inventarios').innerText = formatPctRounded(inv / totActivo);
+                document.getElementById('pct_ctas_cob_filiales').innerText = formatPctRounded(ctasCobFil / totActivo);
+                document.getElementById('pct_pagos_ant').innerText = formatPctRounded(pagosAnt / totActivo);
+                document.getElementById('pct_otros_act_circ').innerText = formatPctRounded(otrosActCirc / totActivo);
+                document.getElementById('pct_deudores_div').innerText = formatPctRounded(deudores / totActivo);
+                document.getElementById('pct_otros_act_circ_noop').innerText = formatPctRounded(otrosActCircNoOp / totActivo);
+                document.getElementById('pct_tot_act_circ').innerText = formatPctRounded(totActCirc / totActivo);
+
+                document.getElementById('pct_prop_planta').innerText = formatPctRounded(propPlanta / totActivo);
+                document.getElementById('pct_inv_subs').innerText = formatPctRounded(invSubs / totActivo);
+                document.getElementById('pct_ctas_cob_fil_lp').innerText = formatPctRounded(ctasCobFilLp / totActivo);
+                document.getElementById('pct_otros_act_fijos').innerText = formatPctRounded(otrosActFijo / totActivo);
+                document.getElementById('pct_tot_act_fijo').innerText = formatPctRounded(totActFijo / totActivo);
+
+                document.getElementById('pct_act_imp_dif').innerText = formatPctRounded(actImpDif / totActivo);
+                document.getElementById('pct_patentes').innerText = formatPctRounded(patentes / totActivo);
+                document.getElementById('pct_credito_merc').innerText = formatPctRounded(credMerc / totActivo);
+                document.getElementById('pct_cargos_dif').innerText = formatPctRounded(cargosDif / totActivo);
+                document.getElementById('pct_tot_otros_act').innerText = formatPctRounded(totOtrosAct / totActivo);
+
+                document.getElementById('pct_bancomer_cp').innerText = formatPctRounded(bancomerCP / totActivo);
+                document.getElementById('pct_pas_bancos_cp').innerText = formatPctRounded(pasBancosCP / totActivo);
+                document.getElementById('pct_emisiones_cp').innerText = formatPctRounded(emisionesCP / totActivo);
+                document.getElementById('pct_porc_lp_bancomer').innerText = formatPctRounded(porcLpBancomer / totActivo);
+                document.getElementById('pct_porc_lp_otros').innerText = formatPctRounded(porcLpOtros / totActivo);
+                document.getElementById('pct_proveedores').innerText = formatPctRounded(prov / totActivo);
+                document.getElementById('pct_impuestos_x_pagar').innerText = formatPctRounded(impPagar / totActivo);
+                document.getElementById('pct_ctas_pagar_filiales').innerText = formatPctRounded(ctasPagFil / totActivo);
+                document.getElementById('pct_gastos_acum').innerText = formatPctRounded(gtosAcum / totActivo);
+                document.getElementById('pct_otros_pas_circ_op').innerText = formatPctRounded(otrosPasCircOp / totActivo);
+                document.getElementById('pct_otros_pas_circ_noop').innerText = formatPctRounded(otrosPasCircNoOp / totActivo);
+                document.getElementById('pct_tot_pasivo_cp').innerText = formatPctRounded(totPasivoCP / totActivo);
+
+                document.getElementById('pct_bancomer_lp').innerText = formatPctRounded(bancomerLP / totActivo);
+                document.getElementById('pct_otros_bancos_lp').innerText = formatPctRounded(otrosBancosLP / totActivo);
+                document.getElementById('pct_emisiones_lp').innerText = formatPctRounded(emisionesLP / totActivo);
+                document.getElementById('pct_ctas_pagar_fil_lp').innerText = formatPctRounded(ctasPagFilLp / totActivo);
+                document.getElementById('pct_otros_pas_lp').innerText = formatPctRounded(otrosPasLP / totActivo);
+                document.getElementById('pct_primas_ant').innerText = formatPctRounded(primasAnt / totActivo);
+                document.getElementById('pct_pasivos_dif').innerText = formatPctRounded(pasivosDif / totActivo);
+                document.getElementById('pct_pas_imp_dif').innerText = formatPctRounded(pasImpDif / totActivo);
+                document.getElementById('pct_tot_pasivo_lp').innerText = formatPctRounded(totPasivoLP / totActivo);
+                document.getElementById('pct_tot_pasivo').innerText = formatPctRounded(totPasivo / totActivo);
+
+                document.getElementById('pct_capital_social').innerText = formatPctRounded(capSocial / totActivo);
+                document.getElementById('pct_aport_cap').innerText = formatPctRounded(aportCap / totActivo);
+                document.getElementById('pct_prima_acc').innerText = formatPctRounded(primaAcc / totActivo);
+                document.getElementById('pct_interes_min').innerText = formatPctRounded(intMin / totActivo);
+                document.getElementById('pct_exc_insuf').innerText = formatPctRounded(excInsuf / totActivo);
+                document.getElementById('pct_impacto_isr').innerText = formatPctRounded(impactoIsr / totActivo);
+                document.getElementById('pct_reservas').innerText = formatPctRounded(reservas / totActivo);
+                document.getElementById('pct_util_retenidas').innerText = formatPctRounded(utilRetenidas / totActivo);
+                document.getElementById('pct_util_ejercicio_bg').innerText = formatPctRounded(utNeta / totActivo);
+                document.getElementById('pct_tot_capital').innerText = formatPctRounded(totCapital / totActivo);
+            } else {
+                const bgFields = ['pct_caja_bancos', 'pct_inv_temp', 'pct_clientes', 'pct_inventarios', 'pct_ctas_cob_filiales', 'pct_pagos_ant', 'pct_otros_act_circ', 'pct_deudores_div', 'pct_otros_act_circ_noop', 'pct_tot_act_circ', 'pct_prop_planta', 'pct_inv_subs', 'pct_ctas_cob_fil_lp', 'pct_otros_act_fijos', 'pct_tot_act_fijo', 'pct_act_imp_dif', 'pct_patentes', 'pct_credito_merc', 'pct_cargos_dif', 'pct_tot_otros_act', 'pct_bancomer_cp', 'pct_pas_bancos_cp', 'pct_emisiones_cp', 'pct_porc_lp_bancomer', 'pct_porc_lp_otros', 'pct_proveedores', 'pct_impuestos_x_pagar', 'pct_ctas_pagar_filiales', 'pct_gastos_acum', 'pct_otros_pas_circ_op', 'pct_otros_pas_circ_noop', 'pct_tot_pasivo_cp', 'pct_bancomer_lp', 'pct_otros_bancos_lp', 'pct_emisiones_lp', 'pct_ctas_pagar_fil_lp', 'pct_otros_pas_lp', 'pct_primas_ant', 'pct_pasivos_dif', 'pct_pas_imp_dif', 'pct_tot_pasivo_lp', 'pct_tot_pasivo', 'pct_capital_social', 'pct_aport_cap', 'pct_prima_acc', 'pct_interes_min', 'pct_exc_insuf', 'pct_impacto_isr', 'pct_reservas', 'pct_util_retenidas', 'pct_util_ejercicio_bg', 'pct_tot_capital'];
+                bgFields.forEach(f => {
+                    const el = document.getElementById(f);
+                    if (el) el.innerText = '0%';
+                });
+            }
+
+            // CUADRE STATUS
+            const diff = totActivo - totPasivoCap;
+            const statusElem = document.getElementById('cuadre_status');
+            if (Math.abs(diff) < 1) {
+                statusElem.className = "p-1 text-center bg-green-100 text-green-900 font-bold text-xs rounded";
+                statusElem.innerText = "✓ BALANCE CUADRADO (Diferencia: 0.00)";
+            } else {
+                statusElem.className = "p-1 text-center bg-red-100 text-red-900 font-bold text-xs rounded";
+                statusElem.innerText = "⚠ BALANCE DESCUADRADO (Diferencia: " + formatMoney(diff) + ")";
+            }
+
+            // SUBTABLA INFERIOR ER
+            const partMin = num('part_minoritaria');
+            const ciaTenedora = num('cia_tenedora');
+            document.getElementById('pct_part_min').innerText = vTot > 0 ? formatPctRounded(partMin / vTot) : '0%';
+            document.getElementById('pct_tenedora').innerText = vTot > 0 ? formatPctRounded(ciaTenedora / vTot) : '0%';
+
+            // EBITDA (UAFIRDA) = UAFIR + DEPRECIACION + AMORTIZACION
+            const uafirda = uafir + depr + amort;
+            document.getElementById('uafirda').innerText = formatMoney(uafirda);
+            document.getElementById('pct_uafirda').innerText = vTot > 0 ? formatPctRounded(uafirda / vTot) : '0%';
+
+            const gastoFinNeto = gtosFin - prodFin;
+            document.getElementById('gasto_fin_neto').innerText = formatMoney(gastoFinNeto);
+            document.getElementById('pct_gasto_fin_neto').innerText = vTot > 0 ? formatPctRounded(gastoFinNeto / vTot) : '0%';
+
+            const uafirdaNetoInt = uafirda - gastoFinNeto;
+            document.getElementById('uafirda_neto_int').innerText = formatMoney(uafirdaNetoInt);
+            document.getElementById('pct_uafirda_neto_int').innerText = vTot > 0 ? formatPctRounded(uafirdaNetoInt / vTot) : '0%';
+
+            const invActFijos = num('inv_act_fijos');
+            const uafirdaNetoIntInv = uafirdaNetoInt - invActFijos;
+            document.getElementById('uafirda_neto_int_inv').innerText = formatMoney(uafirdaNetoIntInv);
+            document.getElementById('pct_uafirda_neto_int_inv').innerText = vTot > 0 ? formatPctRounded(uafirdaNetoIntInv / vTot) : '0%';
+
+            // DEUDA FINANCIERA TOTAL
+            const deudaFinTotal = bancomerCP + pasBancosCP + emisionesCP + porcLpBancomer + porcLpOtros + bancomerLP + otrosBancosLP + emisionesLP;
+            document.getElementById('deuda_fin_total').innerText = formatMoney(deudaFinTotal);
+
+            // DEUDA FINANCIERA NETA
+            const deudaFinNeta = Math.max(0, deudaFinTotal - caja);
+            document.getElementById('deuda_fin_neta').innerText = formatMoney(deudaFinNeta);
+
+            // DEUDA NETA / EBITDA
+            const deudaNetaEbitda = uafirda > 0 && deudaFinNeta > 0 ? (deudaFinNeta / uafirda) : 0;
+            document.getElementById('deuda_neta_ebitda').innerText = formatDecimal(deudaNetaEbitda);
+
+            // PAY BACK ADMON CENTRAL
+            const denomPayBackAdmon = utNeta + depr + amort + posMon + perdCamb;
+            const paybackAdmon = utNeta !== 0 && denomPayBackAdmon !== 0 ? (deudaFinNeta / denomPayBackAdmon) : 0;
+            document.getElementById('payback_admon').innerText = formatDecimal(paybackAdmon);
+
+            const fondoManiobra = totActCirc - totPasivoCP;
+            document.getElementById('fondo_maniobra').innerText = formatMoney(fondoManiobra);
+
+            const paybackOper = uafirda > 0 ? (deudaTotal / uafirda) : 0;
+            document.getElementById('payback_operacion').innerText = formatDecimal(paybackOper);
+        }
+
+        function ejecutarAppsScript(fnName, param, callbackExito, callbackError) {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(callbackExito)
+                    .withFailureHandler(callbackError)[fnName](param);
+                return;
+            }
+
+            const callbackName = 'gas_cb_' + Math.round(Math.random() * 1000000);
+            
+            window[callbackName] = function(res) {
+                delete window[callbackName];
+                const scriptEl = document.getElementById(callbackName);
+                if (scriptEl) scriptEl.remove();
+                
+                if (res && res.exito !== false) {
+                    if (callbackExito) callbackExito(res);
+                } else {
+                    if (callbackError) callbackError({ message: (res ? res.mensaje : "Error desconocido") });
+                }
+            };
+
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = `${WEB_APP_URL}?action=${fnName}&callback=${callbackName}&data=${encodeURIComponent(JSON.stringify(param))}`;
+            
+            script.onerror = function(err) {
+                delete window[callbackName];
+                const scriptEl = document.getElementById(callbackName);
+                if (scriptEl) scriptEl.remove();
+                if (callbackError) callbackError({ message: "No se pudo conectar con Google Sheets de AFE." });
+            };
+
+            document.body.appendChild(script);
+        }
+
+        function buscarClienteJS() {
+            const noCliente = document.getElementById('no_cliente').value.trim();
+            const statusBox = document.getElementById('status-busqueda');
+
+            if (!noCliente) {
+                alert('Por favor, ingrese un número de cliente.');
+                return;
+            }
+
+            statusBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando en Google Sheets de AFE...';
+
+            ejecutarAppsScript(
+                'buscarClienteAFE',
+                noCliente,
+                function(res) {
+                    if (res && res.exito) {
+                        if (res.cliente) {
+                            document.getElementById('empresa').value = res.cliente.nombre || '';
+                            document.getElementById('grupo').value = res.cliente.grupo || '';
+                            statusBox.className = "text-xs font-bold text-emerald-600";
+                            statusBox.innerText = '✓ Cliente AFE encontrado e información cargada.';
+                        } else {
+                            statusBox.className = "text-xs font-bold text-blue-600";
+                            statusBox.innerText = 'ℹ Cliente no registrado aún. Ingrese el Nombre de la Empresa y presione Registrar Cliente.';
+                        }
+                        actualizarLabelsCliente(noCliente, document.getElementById('empresa').value);
+                        renderTablasAFE(res.ejercicios);
+                        habilitarBotonesExportacion(true);
+                    }
+                },
+                function(err) {
+                    statusBox.className = "text-xs font-bold text-red-600";
+                    statusBox.innerText = '⚠ Error en búsqueda: ' + (err.message || err);
+                }
+            );
+        }
+
+        function registrarClienteJS() {
+            const noCliente = document.getElementById('no_cliente').value.trim();
+            const empresa = document.getElementById('empresa').value.trim();
+            const grupo = document.getElementById('grupo').value.trim();
+            const statusBox = document.getElementById('status-busqueda');
+
+            if (!noCliente || !empresa) {
+                alert('Debe especificar el No. de Cliente y la Razón Social de la Empresa.');
+                return;
+            }
+
+            statusBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando cliente y creando pestaña con tablas...';
+
+            const payload = {
+                noCliente: noCliente,
+                nombreEmpresa: empresa,
+                grupo: grupo
+            };
+
+            ejecutarAppsScript(
+                'registrarClienteAFE',
+                payload,
+                function(res) {
+                    statusBox.className = "text-xs font-bold text-emerald-600";
+                    statusBox.innerText = '✓ Cliente ' + empresa + ' (No. ' + noCliente + ') registrado en AFE.';
+                    actualizarLabelsCliente(noCliente, empresa);
+                    renderTablasAFE(res.ejercicios);
+                    habilitarBotonesExportacion(true);
+                },
+                function(err) {
+                    statusBox.className = "text-xs font-bold text-red-600";
+                    statusBox.innerText = '⚠ Error al registrar: ' + (err.message || err);
+                }
+            );
+        }
+
+        function actualizarLabelsCliente(noCliente, nombreEmpresa) {
+            document.getElementById('lbl-empresa-nombre').innerText = nombreEmpresa ? nombreEmpresa.toUpperCase() : 'NO SELECCIONADO';
+            document.getElementById('lbl-cliente-num').innerText = noCliente || '----';
+        }
+
+        function habilitarBotonesExportacion(habilitar) {
+            const btnExcel = document.getElementById('btn-excel');
+            const btnPdf = document.getElementById('btn-pdf');
+
+            if (habilitar) {
+                btnExcel.disabled = false;
+                btnExcel.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnPdf.disabled = false;
+                btnPdf.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                btnExcel.disabled = true;
+                btnExcel.classList.add('opacity-50', 'cursor-not-allowed');
+                btnPdf.disabled = true;
+                btnPdf.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function descargarExcelJS() {
+            const noCliente = document.getElementById('no_cliente').value.trim();
+            if (!noCliente) return;
+
+            ejecutarAppsScript(
+                'obtenerLinkExcel',
+                noCliente,
+                function(res) {
+                    if (res && res.exito && res.downloadUrl) {
+                        window.open(res.downloadUrl, '_blank');
+                    }
+                },
+                function(err) { alert('Error: ' + err.message); }
+            );
+        }
+
+        function exportarPDFJS() {
+            const noCliente = document.getElementById('no_cliente').value.trim();
+            const empresa = document.getElementById('empresa').value.trim() || 'Cliente';
+            const elemento = document.getElementById('contenedor-reporte-pdf');
+
+            document.body.classList.add('pdf-mode');
+
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `BBVA_AFE_Evaluacion_${noCliente}_${empresa}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            html2pdf().set(opt).from(elemento).save().then(() => {
+                document.body.classList.remove('pdf-mode');
+            }).catch(() => {
+                document.body.classList.remove('pdf-mode');
+            });
+        }
+
+        // RENDERIZADO DINÁMICO QUE GARANTIZA LA RECONSTRUCCIÓN COMPLETA DE TODOS LOS EJERCICIOS
+        function renderTablasAFE(ejercicios) {
+            const theadER = document.getElementById('thead-er');
+            const tbodyER = document.getElementById('tbody-er');
+            const theadBGAct = document.getElementById('thead-bg-activos');
+            const tbodyBGAct = document.getElementById('tbody-bg-activos');
+            const theadBGPas = document.getElementById('thead-bg-pasivos');
+            const tbodyBGPas = document.getElementById('tbody-bg-pasivos');
+
+            const ejList = ejercicios || [];
+
+            let thER = '<tr class="bg-bbva-navy text-white"><th class="p-2 border">CONCEPTO</th>';
+            let thBGAct = '<tr class="bg-emerald-700 text-white"><th class="p-2 border">CONCEPTOS ACTIVOS</th>';
+            let thBGPas = '<tr class="bg-red-800 text-white"><th class="p-2 border">CONCEPTOS PASIVOS Y CAPITAL</th>';
+
+            ejList.forEach((ej, idx) => {
+                const fecha = ej.metadata.fechaCierre || `Ejec ${idx+1}`;
+                const colHTML = `<th class="p-2 border text-center" colspan="2">${fecha}<br><span class="text-[10px] opacity-80">${ej.metadata.auditor || ''}</span></th>`;
+                thER += colHTML;
+                thBGAct += colHTML;
+                thBGPas += colHTML;
+            });
+
+            thER += '</tr>';
+            thBGAct += '</tr>';
+            thBGPas += '</tr>';
+
+            let subHTML = '<tr class="bg-gray-200 font-bold text-bbva-navy"><td class="p-1 border">DETALLE</td>';
+            ejList.forEach(() => {
+                subHTML += '<td class="p-1 border text-right">MONTO</td><td class="p-1 border text-right">%</td>';
+            });
+            subHTML += '</tr>';
+
+            theadER.innerHTML = thER + subHTML;
+            theadBGAct.innerHTML = thBGAct + subHTML;
+            theadBGPas.innerHTML = thBGPas + subHTML;
+
+            const listER = [
+                "VENTAS NETAS NACIONALES", "VENTAS NETAS EXPORTACION", "VENTAS NETAS TOTALES",
+                "COSTO DE VENTAS", "UTILIDAD BRUTA", "GTOS DE VTA. Y ADMON.", "DEPRECIACION", "AMORTIZACION",
+                "U A F I R", "GASTOS FINANCIEROS", "PRODUCTOS FINANCIEROS", "PERDIDA (UTILIDAD) POS. MON.",
+                "PERDIDA (UTILIDAD) CAMBIARIA", "COSTO INTEGRAL FINANCIERO", "OTROS GASTOS (INGRESOS)",
+                "UTILIDAD ANTES DE ISR Y PTU", "I.S.R. CAUSADO", "P.T.U. CAUSADO", "IMPAC CAUSADO",
+                "IMPUESTOS Y PTU DIFERIDOS", "UTILIDAD ANTES PART. EXTRAORD.", "PERDIDA (UTILIDAD) EXTRAORD.",
+                "PERD. (UTIL.) SUBS./AFILS.", "UTILIDAD NETA", "UTIL. (PERD.) PART. MINORITARIA",
+                "UTIL. (PERD.) CIA. TENEDORA", "UAFIRDA", "GASTO FINANCIERO NETO", "UAFIRDA NETO DE INTERESES",
+                "INVERSION EN ACTIVOS FIJOS", "UAFIRDA NETO DE INT. E INV.", "DEUDA NETA / EBITDA",
+                "DEUDA FINANCIERA TOTAL", "DEUDA FINANCIERA NETA", "PAY BACK ADMON CENTRAL",
+                "FONDO DE MANIOBRA", "PAY BACK DE OPERACION"
+            ];
+
+            const listActivos = [
+                "CAJA Y BANCOS", "INVERSIONES TEMPORALES", "CLIENTES Y DOCTOS X COB.", "INVENTARIOS",
+                "CTAS. X COBRAR A FILIALES", "PAGOS ANTICIPADOS", "OTROS ACT. CIRC. OPERATIVOS",
+                "DEUDORES DIVERSOS", "OTROS ACT. CIRC. NO OPERAT.", "TOTAL ACTIVO CIRCULANTE",
+                "PROP. PLANTA Y EQ. NETO", "INVERS. EN SUBS./AFILS.", "CTAS. X COBRAR A FILIALES (LP)",
+                "OTROS ACTIVOS FIJOS", "TOTAL ACTIVO FIJO", "ACTIVO POR IMPUESTOS DIFERIDOS",
+                "PATENTES, LIC. Y MARCAS", "CREDITO MERCANTIL", "CARGOS DIFERIDOS", "TOTAL OTROS ACTIVOS",
+                "TOTAL ACTIVO"
+            ];
+
+            const listPasivosCapital = [
+                "BANCOMER CORTO PLAZO", "OTROS BANCOS CORTO PLAZO", "EMISIONES DE DEUDA (CP)",
+                "PORC. CIRC. LP BANCOMER", "PORC. CIRC. LP OTROS BANCOS", "PROVEEDORES", "IMPUESTOS POR PAGAR",
+                "CUENTAS X PAGAR FILIALES", "GASTOS ACUMULADOS", "OTROS PAS. CIRC. OPERATIVOS",
+                "OTROS PAS. CIRC. NO OPERAT.", "TOTAL PASIVO C.P.", "BANCOMER LARGO PLAZO",
+                "OTROS BANCOS LARGO PLAZO", "EMISIONES DE DEUDA (LP)", "CUENTAS X PAGAR FILIALES (LP)",
+                "OTROS PASIVOS LARGO PZO.", "PRIMAS DE ANTIGUEDAD", "PASIVOS DIFERIDOS",
+                "PASIVO X IMPUESTOS DIFERIDOS", "TOTAL PASIVO L.P.", "TOTAL PASIVO",
+                "CAPITAL SOCIAL ACTUALIZADO", "APORT. PEND. DE CAPITALIZAR", "PRIMA EN EMISION DE ACCIONES",
+                "INTERES MINORITARIO", "EXC(INSUF) EN LA ACT. CC", "IMPACTO ISR DIFERIDO", "RESERVAS",
+                "UTILIDADES RETENIDAS", "UTILIDAD DEL EJERCICIO", "TOTAL CAP. CONTABLE", "TOTAL PASIVO+CAP. CONTABLE",
+                "DIFERENCIA BALANCE GENERAL"
+            ];
+
+            if (ejList.length === 0) {
+                tbodyER.innerHTML = '<tr><td colspan="2" class="p-3 text-center text-gray-400">Sin ejercicios AFE registrados.</td></tr>';
+                tbodyBGAct.innerHTML = '<tr><td colspan="2" class="p-3 text-center text-gray-400">Sin ejercicios AFE registrados.</td></tr>';
+                tbodyBGPas.innerHTML = '<tr><td colspan="2" class="p-3 text-center text-gray-400">Sin ejercicios AFE registrados.</td></tr>';
+                return;
+            }
+
+            let bodyERHTML = '';
+            listER.forEach(concepto => {
+                var esResaltado = concepto.indexOf('TOTAL') !== -1 || concepto === 'UTILIDAD NETA' || concepto === 'UTILIDAD BRUTA' || concepto === 'U A F I R' || concepto === 'UAFIRDA' || concepto === 'UTILIDAD ANTES DE ISR Y PTU' || concepto === 'UTILIDAD ANTES PART. EXTRAORD.';
+                bodyERHTML += `<tr class="${esResaltado ? 'font-bold bg-yellow-50 text-bbva-navy' : ''}">`;
+                bodyERHTML += `<td class="p-2 border font-medium">${concepto}</td>`;
+                
+                ejList.forEach(ej => {
+                    let val = ej.er[concepto];
+                    const vTot = ej.er["VENTAS NETAS TOTALES"] || 1;
+
+                    // Si el valor no vino precalculado desde la base de datos de Sheets para ese ejercicio en particular, lo calcula dinámicamente con los datos guardados en ese ejercicio
+                    if (val === undefined || val === 0) {
+                        const uafir = ej.er["U A F I R"] || 0;
+                        const depr = ej.er["DEPRECIACION"] || 0;
+                        const amort = ej.er["AMORTIZACION"] || 0;
+                        const uafirda = uafir + depr + amort;
+                        const gtosFin = ej.er["GASTOS FINANCIEROS"] || 0;
+                        const prodFin = ej.er["PRODUCTOS FINANCIEROS"] || 0;
+                        const gtosFinNeto = gtosFin - prodFin;
+                        const uafirdaNetoInt = uafirda - gtosFinNeto;
+                        const invActFijos = ej.er["INVERSION EN ACTIVOS FIJOS"] || 0;
+                        const uafirdaNetoIntInv = uafirdaNetoInt - invActFijos;
+
+                        const bancomerCP = ej.bg["BANCOMER CORTO PLAZO"] || 0;
+                        const pasBancosCP = ej.bg["OTROS BANCOS CORTO PLAZO"] || 0;
+                        const emisionesCP = ej.bg["EMISIONES DE DEUDA (CP)"] || 0;
+                        const porcBancomer = ej.bg["PORC. CIRC. LP BANCOMER"] || 0;
+                        const porcOtros = ej.bg["PORC. CIRC. LP OTROS BANCOS"] || 0;
+                        const bancomerLP = ej.bg["BANCOMER LARGO PLAZO"] || 0;
+                        const otrosLP = ej.bg["OTROS BANCOS LARGO PLAZO"] || 0;
+                        const emisionesLP = ej.bg["EMISIONES DE DEUDA (LP)"] || 0;
+                        const caja = ej.bg["CAJA Y BANCOS"] || 0;
+
+                        const deudaTotal = bancomerCP + pasBancosCP + emisionesCP + porcBancomer + porcOtros + bancomerLP + otrosLP + emisionesLP;
+                        const deudaNeta = Math.max(0, deudaTotal - caja);
+                        const utNeta = ej.er["UTILIDAD NETA"] || 0;
+                        const posMon = ej.er["PERDIDA (UTILIDAD) POS. MON."] || 0;
+                        const perdCamb = ej.er["PERDIDA (UTILIDAD) CAMBIARIA"] || 0;
+                        const denomPayback = utNeta + depr + amort + posMon + perdCamb;
+
+                        const totActCirc = ej.bg["TOTAL ACTIVO CIRCULANTE"] || 0;
+                        const totPasivoCP = ej.bg["TOTAL PASIVO C.P."] || 0;
+
+                        if (concepto === "UAFIRDA") val = uafirda;
+                        else if (concepto === "GASTO FINANCIERO NETO") val = gtosFinNeto;
+                        else if (concepto === "UAFIRDA NETO DE INTERESES") val = uafirdaNetoInt;
+                        else if (concepto === "UAFIRDA NETO DE INT. E INV.") val = uafirdaNetoIntInv;
+                        else if (concepto === "DEUDA FINANCIERA TOTAL") val = deudaTotal;
+                        else if (concepto === "DEUDA FINANCIERA NETA") val = deudaNeta;
+                        else if (concepto === "FONDO DE MANIOBRA") val = totActCirc - totPasivoCP;
+                        else if (concepto === "DEUDA NETA / EBITDA") val = uafirda > 0 && deudaNeta > 0 ? (deudaNeta / uafirda) : 0;
+                        else if (concepto === "PAY BACK ADMON CENTRAL") val = utNeta !== 0 && denomPayback !== 0 ? (deudaNeta / denomPayback) : 0;
+                        else if (concepto === "PAY BACK DE OPERACION") val = uafirda > 0 ? (deudaTotal / uafirda) : 0;
+                        else val = ej.er[concepto] || 0;
+                    }
+
+                    const esDecimal = (concepto === "DEUDA NETA / EBITDA" || concepto === "PAY BACK ADMON CENTRAL" || concepto === "PAY BACK DE OPERACION");
+                    const displayVal = esDecimal ? formatDecimal(val) : fmtMoney(val);
+                    const pct = (vTot > 0 && !esDecimal) ? (val / vTot * 100).toFixed(0) + '%' : '-';
+
+                    bodyERHTML += `<td class="p-2 border text-right font-semibold">${displayVal}</td>`;
+                    bodyERHTML += `<td class="p-2 border text-right text-gray-600">${pct}</td>`;
+                });
+                bodyERHTML += '</tr>';
+            });
+            tbodyER.innerHTML = bodyERHTML;
+
+            let bodyActHTML = '';
+            listActivos.forEach(concepto => {
+                var esResaltado = concepto.indexOf('TOTAL') !== -1 || concepto === 'TOTAL ACTIVO';
+                bodyActHTML += `<tr class="${esResaltado ? 'font-bold bg-yellow-50 text-bbva-navy' : ''}">`;
+                bodyActHTML += `<td class="p-2 border font-medium">${concepto}</td>`;
+                ejList.forEach(ej => {
+                    const val = ej.bg[concepto] !== undefined ? ej.bg[concepto] : 0;
+                    const totAct = ej.bg["TOTAL ACTIVO"] || 1;
+                    const pct = totAct > 0 ? (val / totAct * 100).toFixed(0) + '%' : '0%';
+                    bodyActHTML += `<td class="p-2 border text-right font-semibold">${fmtMoney(val)}</td>`;
+                    bodyActHTML += `<td class="p-2 border text-right text-gray-600">${pct}</td>`;
+                });
+                bodyActHTML += '</tr>';
+            });
+            tbodyBGAct.innerHTML = bodyActHTML;
+
+            let bodyPasHTML = '';
+            listPasivosCapital.forEach(concepto => {
+                var esResaltado = concepto.indexOf('TOTAL') !== -1 || concepto === 'TOTAL CAP. CONTABLE' || concepto === 'TOTAL PASIVO+CAP. CONTABLE' || concepto === 'DIFERENCIA BALANCE GENERAL';
+                bodyPasHTML += `<tr class="${esResaltado ? 'font-bold bg-yellow-50 text-bbva-navy' : ''}">`;
+                bodyPasHTML += `<td class="p-2 border font-medium">${concepto}</td>`;
+                ejList.forEach(ej => {
+                    const val = ej.bg[concepto] !== undefined ? ej.bg[concepto] : 0;
+                    const totAct = ej.bg["TOTAL ACTIVO"] || 1;
+                    const pct = totAct > 0 ? (val / totAct * 100).toFixed(0) + '%' : '0%';
+                    bodyPasHTML += `<td class="p-2 border text-right font-semibold">${fmtMoney(val)}</td>`;
+                    bodyPasHTML += `<td class="p-2 border text-right text-gray-600">${pct}</td>`;
+                });
+                bodyPasHTML += '</tr>';
+            });
+            tbodyBGPas.innerHTML = bodyPasHTML;
+        }
+
+        function cargarDatosEjemplo() {
+            document.getElementById('empresa').value = 'GRUPO INDUSTRIAL VIDA SA DE CV';
+            document.getElementById('grupo').value = 'GRUPO INDUSTRIAL VIDA';
+            document.getElementById('no_cliente').value = '37943836';
+            document.getElementById('fecha_cierre').value = '2023-12-31';
+            document.getElementById('inflacion').value = 5.69;
+
+            document.getElementById('v_nacionales').value = 3724666;
+            document.getElementById('v_exportacion').value = 0;
+            document.getElementById('costo_ventas').value = 2641975;
+            document.getElementById('gtos_vta_admon').value = 733231;
+            document.getElementById('depreciacion').value = 37412;
+            document.getElementById('amortizacion').value = 0;
+            document.getElementById('gtos_fin').value = 148743;
+            document.getElementById('prod_fin').value = 23146;
+            document.getElementById('pos_monetaria').value = 0;
+            document.getElementById('perd_cambiaria').value = 1502;
+            document.getElementById('otros_gastos').value = -3652;
+            document.getElementById('isr_causado').value = 60546;
+            document.getElementById('ptu_causado').value = 22965;
+            document.getElementById('impac_causado').value = 0;
+            document.getElementById('imp_ptu_diferidos').value = 0;
+            document.getElementById('perd_extraord').value = 0;
+            document.getElementById('perd_subsidiarias').value = 0;
+            document.getElementById('part_minoritaria').value = 0;
+            document.getElementById('cia_tenedora').value = 0;
+            document.getElementById('inv_act_fijos').value = 0;
+
+            document.getElementById('caja_bancos').value = 39114;
+            document.getElementById('inv_temp').value = 28252;
+            document.getElementById('clientes').value = 438039;
+            document.getElementById('inventarios').value = 382151;
+            document.getElementById('ctas_cob_filiales').value = 47440;
+            document.getElementById('pagos_anticipados').value = 105150;
+            document.getElementById('otros_act_circ').value = 92745;
+            document.getElementById('deudores_div').value = 455;
+            document.getElementById('otros_act_circ_noop').value = 0;
+            document.getElementById('prop_planta_eq').value = 546341;
+            document.getElementById('inv_subs_afils').value = 0;
+            document.getElementById('ctas_cob_filiales_lp').value = 0;
+            document.getElementById('otros_act_fijos').value = 71238;
+            document.getElementById('act_imp_diferidos').value = 15925;
+            document.getElementById('patentes_marcas').value = 0;
+            document.getElementById('credito_mercantil').value = 0;
+            document.getElementById('cargos_diferidos').value = 3954;
+
+            document.getElementById('bancomer_cp').value = 0;
+            document.getElementById('pas_bancos_cp').value = 156000;
+            document.getElementById('emisiones_deuda_cp').value = 0;
+            document.getElementById('porc_lp_bancomer').value = 89712;
+            document.getElementById('porc_lp_otros').value = 11763;
+            document.getElementById('proveedores').value = 372629;
+            document.getElementById('impuestos_x_pagar').value = 37554;
+            document.getElementById('ctas_pagar_filiales').value = 5635;
+            document.getElementById('gastos_acumulados').value = 0;
+            document.getElementById('otros_pas_circ_op').value = 48964;
+            document.getElementById('otros_pas_circ_noop').value = 245325;
+            document.getElementById('bancomer_lp').value = 377986;
+            document.getElementById('otros_bancos_lp').value = 25459;
+            document.getElementById('emisiones_deuda_lp').value = 0;
+            document.getElementById('ctas_pagar_filiales_lp').value = 0;
+            document.getElementById('otros_pas_lp').value = 40836;
+            document.getElementById('primas_antiguedad').value = 0;
+            document.getElementById('pasivos_diferidos').value = 0;
+            document.getElementById('pasivo_imp_diferidos').value = 0;
+
+            document.getElementById('capital_social').value = 174377;
+            document.getElementById('aport_capitalizar').value = 0;
+            document.getElementById('prima_acciones').value = 0;
+            document.getElementById('interes_minoritario').value = 0;
+            document.getElementById('exc_insuf_cap').value = -6193;
+            document.getElementById('impacto_isr_dif').value = 0;
+            document.getElementById('reservas').value = 1494;
+            document.getElementById('util_retenidas').value = 84173;
+
+            calcularTodo();
+        }
+
+        function guardarNuevoEjercicioAFE(event) {
+            event.preventDefault();
+
+            const noCliente = document.getElementById('no_cliente').value.trim();
+            const empresa = document.getElementById('empresa').value.trim();
+
+            if (!noCliente || !empresa) {
+                alert('Especifique No. de Cliente y Empresa.');
+                return;
+            }
+
+            const btnGuardar = document.getElementById('btn-guardar');
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando y Creando Columna...';
+
+            // ESTADO DE RESULTADOS
+            const vNac = num('v_nacionales');
+            const vExp = num('v_exportacion');
+            const vTot = vNac + vExp;
+            const cVentas = num('costo_ventas');
+            const uBruta = vTot - cVentas;
+            const gtosVta = num('gtos_vta_admon');
+            const depr = num('depreciacion');
+            const amort = num('amortizacion');
+            const uafir = uBruta - gtosVta - depr - amort;
+            const gtosFin = num('gtos_fin');
+            const prodFin = num('prod_fin');
+            const posMon = num('pos_monetaria');
+            const perdCamb = num('perd_cambiaria');
+            const cif = gtosFin - prodFin + posMon + perdCamb;
+            const otrosGtos = num('otros_gastos');
+            const utAntesImp = uafir - cif - otrosGtos;
+            const isr = num('isr_causado');
+            const ptu = num('ptu_causado');
+            const impac = num('impac_causado');
+            const impDif = num('imp_ptu_diferidos');
+            const utAntesExtraord = utAntesImp - isr - ptu - impac - impDif;
+            const perdExtraord = num('perd_extraord');
+            const perdSubs = num('perd_subsidiarias');
+            const utNeta = utAntesExtraord - perdExtraord - perdSubs;
+
+            // SUBTABLA INFERIOR ER (EBITDA, CIF, RATIOS, PAYBACK, DEUDA)
+            const uafirdaVal = getCalculatedVal('uafirda');
+            const gastoFinNetoVal = getCalculatedVal('gasto_fin_neto');
+            const uafirdaNetoIntVal = getCalculatedVal('uafirda_neto_int');
+            const invActFijosVal = num('inv_act_fijos');
+            const uafirdaNetoIntInvVal = getCalculatedVal('uafirda_neto_int_inv');
+            const deudaNetaEbitdaVal = getCalculatedVal('deuda_neta_ebitda');
+            const deudaFinTotalVal = getCalculatedVal('deuda_fin_total');
+            const deudaFinNetaVal = getCalculatedVal('deuda_fin_neta');
+            const paybackAdmonVal = getCalculatedVal('payback_admon');
+            const fondoManiobraVal = getCalculatedVal('fondo_maniobra');
+            const paybackOperVal = getCalculatedVal('payback_operacion');
+
+            // BALANCE GENERAL - ACTIVOS
+            const caja = num('caja_bancos');
+            const invTemp = num('inv_temp');
+            const clientes = num('clientes');
+            const inv = num('inventarios');
+            const ctasCobFil = num('ctas_cob_filiales');
+            const pagosAnt = num('pagos_anticipados');
+            const otrosActCirc = num('otros_act_circ');
+            const deudores = num('deudores_div');
+            const otrosActCircNoOp = num('otros_act_circ_noop');
+            const totActCirc = caja + invTemp + clientes + inv + ctasCobFil + pagosAnt + otrosActCirc + deudores + otrosActCircNoOp;
+
+            const prop = num('prop_planta_eq');
+            const invSubs = num('inv_subs_afils');
+            const ctasCobFilLp = num('ctas_cob_filiales_lp');
+            const otrosActFijos = num('otros_act_fijos');
+            const totActFijo = prop + invSubs + ctasCobFilLp + otrosActFijos;
+
+            const actImpDif = num('act_imp_diferidos');
+            const patentes = num('patentes_marcas');
+            const credMerc = num('credito_mercantil');
+            const cargosDif = num('cargos_diferidos');
+            const totOtrosAct = actImpDif + patentes + credMerc + cargosDif;
+
+            const totActivo = totActCirc + totActFijo + totOtrosAct;
+
+            // BALANCE GENERAL - PASIVOS Y CAPITAL
+            const bancomerCP = num('bancomer_cp');
+            const pasCP = num('pas_bancos_cp');
+            const emisionesCP = num('emisiones_deuda_cp');
+            const porcBancomer = num('porc_lp_bancomer');
+            const porcOtros = num('porc_lp_otros');
+            const prov = num('proveedores');
+            const impPagar = num('impuestos_x_pagar');
+            const ctasPagFil = num('ctas_pagar_filiales');
+            const gtosAcum = num('gastos_acumulados');
+            const otrosPasCircOp = num('otros_pas_circ_op');
+            const otrosPasCircNoOp = num('otros_pas_circ_noop');
+            const totPasivoCP = bancomerCP + pasCP + emisionesCP + porcBancomer + porcOtros + prov + impPagar + ctasPagFil + gtosAcum + otrosPasCircOp + otrosPasCircNoOp;
+
+            const bancomerLP = num('bancomer_lp');
+            const otrosLP = num('otros_bancos_lp');
+            const emisionesLP = num('emisiones_deuda_lp');
+            const ctasPagFilLp = num('ctas_pagar_filiales_lp');
+            const otrosPasLP = num('otros_pas_lp');
+            const primasAnt = num('primas_antiguedad');
+            const pasivosDif = num('pasivos_diferidos');
+            const pasImpDif = num('pasivo_imp_diferidos');
+            const totPasivoLP = bancomerLP + otrosLP + emisionesLP + ctasPagFilLp + otrosPasLP + primasAnt + pasivosDif + pasImpDif;
+            const totPasivo = totPasivoCP + totPasivoLP;
+
+            const capSoc = num('capital_social');
+            const aportCap = num('aport_capitalizar');
+            const primaAcc = num('prima_acciones');
+            const intMin = num('interes_minoritario');
+            const excInsuf = num('exc_insuf_cap');
+            const impactoIsr = num('impacto_isr_dif');
+            const reservas = num('reservas');
+            const utilRet = num('util_retenidas');
+            const totCapital = capSoc + aportCap + primaAcc + intMin + excInsuf + impactoIsr + reservas + utilRet + utNeta;
+            
+            const totPasivoCap = totPasivo + totCapital;
+            const diffBalance = totActivo - totPasivoCap;
+
+            const payload = {
+                noCliente: noCliente,
+                nombreEmpresa: empresa,
+                grupo: document.getElementById('grupo').value.trim(),
+                auditor: document.getElementById('auditor').value,
+                fechaCierre: document.getElementById('fecha_cierre').value,
+                tipoEjercicio: document.getElementById('tipo_ejercicio').value,
+                inflacion: document.getElementById('inflacion').value,
+                er: {
+                    "VENTAS NETAS NACIONALES": vNac,
+                    "VENTAS NETAS EXPORTACION": vExp,
+                    "VENTAS NETAS TOTALES": vTot,
+                    "COSTO DE VENTAS": cVentas,
+                    "UTILIDAD BRUTA": uBruta,
+                    "GTOS DE VTA. Y ADMON.": gtosVta,
+                    "DEPRECIACION": depr,
+                    "AMORTIZACION": amort,
+                    "U A F I R": uafir,
+                    "GASTOS FINANCIEROS": gtosFin,
+                    "PRODUCTOS FINANCIEROS": prodFin,
+                    "PERDIDA (UTILIDAD) POS. MON.": posMon,
+                    "PERDIDA (UTILIDAD) CAMBIARIA": perdCamb,
+                    "COSTO INTEGRAL FINANCIERO": cif,
+                    "OTROS GASTOS (INGRESOS)": otrosGtos,
+                    "UTILIDAD ANTES DE ISR Y PTU": utAntesImp,
+                    "I.S.R. CAUSADO": isr,
+                    "P.T.U. CAUSADO": ptu,
+                    "IMPAC CAUSADO": impac,
+                    "IMPUESTOS Y PTU DIFERIDOS": impDif,
+                    "UTILIDAD ANTES PART. EXTRAORD.": utAntesExtraord,
+                    "PERDIDA (UTILIDAD) EXTRAORD.": perdExtraord,
+                    "PERD. (UTIL.) SUBS./AFILS.": perdSubs,
+                    "UTILIDAD NETA": utNeta,
+                    "UTIL. (PERD.) PART. MINORITARIA": num('part_minoritaria'),
+                    "UTIL. (PERD.) CIA. TENEDORA": num('cia_tenedora'),
+                    "UAFIRDA": uafirdaVal,
+                    "GASTO FINANCIERO NETO": gastoFinNetoVal,
+                    "UAFIRDA NETO DE INTERESES": uafirdaNetoIntVal,
+                    "INVERSION EN ACTIVOS FIJOS": invActFijosVal,
+                    "UAFIRDA NETO DE INT. E INV.": uafirdaNetoIntInvVal,
+                    "DEUDA NETA / EBITDA": deudaNetaEbitdaVal,
+                    "DEUDA FINANCIERA TOTAL": deudaFinTotalVal,
+                    "DEUDA FINANCIERA NETA": deudaFinNetaVal,
+                    "PAY BACK ADMON CENTRAL": paybackAdmonVal,
+                    "FONDO DE MANIOBRA": fondoManiobraVal,
+                    "PAY BACK DE OPERACION": paybackOperVal
+                },
+                bg: {
+                    "CAJA Y BANCOS": caja,
+                    "INVERSIONES TEMPORALES": invTemp,
+                    "CLIENTES Y DOCTOS X COB.": clientes,
+                    "INVENTARIOS": inv,
+                    "CTAS. X COBRAR A FILIALES": ctasCobFil,
+                    "PAGOS ANTICIPADOS": pagosAnt,
+                    "OTROS ACT. CIRC. OPERATIVOS": otrosActCirc,
+                    "DEUDORES DIVERSOS": deudores,
+                    "OTROS ACT. CIRC. NO OPERAT.": otrosActCircNoOp,
+                    "TOTAL ACTIVO CIRCULANTE": totActCirc,
+                    "PROP. PLANTA Y EQ. NETO": prop,
+                    "INVERS. EN SUBS./AFILS.": invSubs,
+                    "CTAS. X COBRAR A FILIALES (LP)": ctasCobFilLp,
+                    "OTROS ACTIVOS FIJOS": otrosActFijos,
+                    "TOTAL ACTIVO FIJO": totActFijo,
+                    "ACTIVO POR IMPUESTOS DIFERIDOS": actImpDif,
+                    "PATENTES, LIC. Y MARCAS": patentes,
+                    "CREDITO MERCANTIL": credMerc,
+                    "CARGOS DIFERIDOS": cargosDif,
+                    "TOTAL OTROS ACTIVOS": totOtrosAct,
+                    "TOTAL ACTIVO": totActivo,
+                    "BANCOMER CORTO PLAZO": bancomerCP,
+                    "OTROS BANCOS CORTO PLAZO": pasCP,
+                    "EMISIONES DE DEUDA (CP)": emisionesCP,
+                    "PORC. CIRC. LP BANCOMER": porcBancomer,
+                    "PORC. CIRC. LP OTROS BANCOS": porcOtros,
+                    "PROVEEDORES": prov,
+                    "IMPUESTOS POR PAGAR": impPagar,
+                    "CUENTAS X PAGAR FILIALES": ctasPagFil,
+                    "GASTOS ACUMULADOS": gtosAcum,
+                    "OTROS PAS. CIRC. OPERATIVOS": otrosPasCircOp,
+                    "OTROS PAS. CIRC. NO OPERAT.": otrosPasCircNoOp,
+                    "TOTAL PASIVO C.P.": totPasivoCP,
+                    "BANCOMER LARGO PLAZO": bancomerLP,
+                    "OTROS BANCOS LARGO PLAZO": otrosLP,
+                    "EMISIONES DE DEUDA (LP)": emisionesLP,
+                    "CUENTAS X PAGAR FILIALES (LP)": ctasPagFilLp,
+                    "OTROS PASIVOS LARGO PZO.": otrosPasLP,
+                    "PRIMAS DE ANTIGUEDAD": primasAnt,
+                    "PASIVOS DIFERIDOS": pasivosDif,
+                    "PASIVO X IMPUESTOS DIFERIDOS": pasImpDif,
+                    "TOTAL PASIVO L.P.": totPasivoLP,
+                    "TOTAL PASIVO": totPasivo,
+                    "CAPITAL SOCIAL ACTUALIZADO": capSoc,
+                    "APORT. PEND. DE CAPITALIZAR": aportCap,
+                    "PRIMA EN EMISION DE ACCIONES": primaAcc,
+                    "INTERES MINORITARIO": intMin,
+                    "EXC(INSUF) EN LA ACT. CC": excInsuf,
+                    "IMPACTO ISR DIFERIDO": impactoIsr,
+                    "RESERVAS": reservas,
+                    "UTILIDADES RETENIDAS": utilRet,
+                    "UTILIDAD DEL EJERCICIO": utNeta,
+                    "TOTAL CAP. CONTABLE": totCapital,
+                    "TOTAL PASIVO+CAP. CONTABLE": totPasivoCap,
+                    "DIFERENCIA BALANCE GENERAL": diffBalance
+                }
+            };
+
+            ejecutarAppsScript(
+                'guardarEjercicioAFE',
+                payload,
+                function(res) {
+                    btnGuardar.disabled = false;
+                    btnGuardar.innerHTML = '<i class="fas fa-save"></i> GUARDAR Y CREAR NUEVA COLUMNA AFE';
+                    alert('✓ Ejercicio financiero AFE agregado exitosamente.');
+                    renderTablasAFE(res.ejercicios);
+                },
+                function(err) {
+                    btnGuardar.disabled = false;
+                    btnGuardar.innerHTML = '<i class="fas fa-save"></i> GUARDAR Y CREAR NUEVA COLUMNA AFE';
+                    alert('⚠ Error al guardar: ' + (err.message || err));
+                }
+            );
+        }
+
+        window.onload = function() {
+            calcularTodo();
+        };
+    </script>
+</body>
+</html>
